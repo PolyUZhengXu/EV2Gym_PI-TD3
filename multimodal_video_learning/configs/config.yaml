@@ -1,0 +1,121 @@
+# 多模态视频学习配置文件
+
+# 数据配置
+dataset:
+  name: "UCF101"  # 或 "MSR-VTT", "ActivityNet"
+  num_frames: 8  # 内存有限，采样较少帧数
+  frame_size: [224, 224]
+  num_classes: 101
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  batch_size: 4  # 减小批大小以适应内存
+  num_workers: 0  # Windows 上设置为 0，避免多进程问题
+  prefetch_buffer: 2
+
+# 视觉特征提取配置
+vision:
+  model: "timesformer"  # "timesformer", "vitl", "r3d"
+  pretrained: true
+  input_resolution: 224
+  patch_size: 16
+  temporal_dim: 8
+  depth: 12
+  heads: 12
+  mlp_dim: 3072
+  output_dim: 768
+  dropout: 0.1
+
+# 音频特征提取配置
+audio:
+  model: "whisper"  # "whisper-base" 轻量级
+  sr: 16000  # 采样率
+  n_mfcc: 13
+  n_fft: 400
+  hop_length: 160
+  output_dim: 768
+  freeze_pretrained: false
+
+# 文本特征提取配置
+text:
+  model: "bert-base-uncased"
+  vocab_size: 30522
+  hidden_size: 768
+  num_hidden_layers: 12
+  num_attention_heads: 12
+  intermediate_size: 3072
+  output_dim: 768
+  max_seq_length: 128
+
+# 特征对齐配置
+alignment:
+  method: "temporal_sync"  # "temporal_sync", "cross_modal_projection"
+  projection_hidden_dim: 512
+  use_learned_alignment: true
+  alignment_loss_weight: 0.1
+
+# 动态融合配置
+fusion:
+  type: "dynamic_weighted"
+  modalities: ["vision", "audio", "text"]
+  weight_generator_hidden_dim: 256
+  weight_generator_dropout: 0.2
+  use_gating: true
+  use_normalization: "softmax"  # "softmax", "sigmoid"
+  fusion_hidden_dim: 512
+
+# 时序建模配置
+temporal:
+  model: "transformer_lstm"  # "transformer", "lstm", "transformer_lstm", "gru"
+  num_layers: 2
+  hidden_dim: 512
+  num_heads: 8
+  attention_dropout: 0.1
+  ff_hidden_dim: 2048
+  lstm_hidden_dim: 512
+  bidirectional: true
+
+# 训练配置
+training:
+  num_epochs: 100
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+  optimizer: "adamw"
+  scheduler: "cosine"  # "cosine", "linear", "step"
+  warmup_epochs: 5
+  gradient_clip: 1.0
+  loss_fn: "cross_entropy"
+  label_smoothing: 0.1
+  
+# 正则化配置
+regularization:
+  dropout: 0.2
+  weight_decay: 0.0001
+  mixup_alpha: 0.2
+  cutmix_alpha: 0.2
+  use_mixup: true
+  use_cutmix: false
+
+# 模型配置
+model:
+  input_dim: 768
+  hidden_dim: 512
+  output_dim: 101  # num_classes
+  num_layers: 3
+  dropout: 0.2
+  use_layer_norm: true
+
+# 日志和检查点配置
+logging:
+  log_dir: "./logs"
+  checkpoint_dir: "./checkpoints"
+  save_interval: 10  # 每10个epoch保存一次
+  log_interval: 50  # 每50步记录一次
+  use_wandb: false
+  use_tensorboard: true
+
+# 推理配置
+inference:
+  batch_size: 32
+  use_tta: true  # Test Time Augmentation
+  ensemble_num_models: 3
